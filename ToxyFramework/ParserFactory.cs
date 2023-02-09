@@ -89,6 +89,14 @@ namespace Toxy
             parserMapping.Add(".html", typeHtml);
             parserMapping.Add(".htm", typeHtml);
 
+            #region OpenOffice Format
+            var typeOds = new List<Type>();
+            typeOds.Add(typeof(ODSTextParser));
+            parserMapping.Add(".ods", typeOds);
+            parserMapping.Add(".odp", typeOds);
+            parserMapping.Add(".odt", typeOds);
+            #endregion
+            
             #region Email formats
             var typeEml = new List<Type>();
             typeEml.Add(typeof(EMLEmailParser));
