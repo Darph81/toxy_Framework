@@ -28,6 +28,11 @@ namespace Toxy.Test
             return GetFilePath(filename, "Vcard");
         }
 
+        public static string GetLibreOfficePath(string filename)
+        {
+            return GetFilePath(filename, "LibreOffice");
+        }
+
         public static string GetExcelPath(string filename)
         {
             return GetFilePath(filename, "Excel");
