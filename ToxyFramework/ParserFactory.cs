@@ -17,6 +17,8 @@ namespace Toxy
             var typeTxt = new List<Type>();
             typeTxt.Add(typeof(PlainTextParser));
             parserMapping.Add(".txt", typeTxt);
+	    parserMapping.Add(".sql", typeTxt);
+            parserMapping.Add(".js", typeTxt);
 
             var typeXml = new List<Type>();
             typeXml.Add(typeof(PlainTextParser));
