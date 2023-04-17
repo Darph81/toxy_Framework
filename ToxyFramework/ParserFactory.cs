@@ -25,7 +25,6 @@ namespace Toxy
             typeXml.Add(typeof(PlainTextParser));
             typeXml.Add(typeof(XMLDomParser));
             parserMapping.Add(".xml", typeXml);
-            parserMapping.Add(".html", typeXml);
 
             var typeCSV = new List<Type>();
             typeCSV.Add(typeof(PlainTextParser));
