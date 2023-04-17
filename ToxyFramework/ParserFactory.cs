@@ -17,13 +17,15 @@ namespace Toxy
             var typeTxt = new List<Type>();
             typeTxt.Add(typeof(PlainTextParser));
             parserMapping.Add(".txt", typeTxt);
-	    parserMapping.Add(".sql", typeTxt);
+	        parserMapping.Add(".sql", typeTxt);
             parserMapping.Add(".js", typeTxt);
+            parserMapping.Add(".ts", typeTxt);
 
             var typeXml = new List<Type>();
             typeXml.Add(typeof(PlainTextParser));
             typeXml.Add(typeof(XMLDomParser));
             parserMapping.Add(".xml", typeXml);
+            parserMapping.Add(".html", typeXml);
 
             var typeCSV = new List<Type>();
             typeCSV.Add(typeof(PlainTextParser));
