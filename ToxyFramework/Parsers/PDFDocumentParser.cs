@@ -1,10 +1,8 @@
-﻿using iText.Kernel.Pdf;
+﻿using iText.Kernel.Font;
+using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace Toxy.Parsers
 {
@@ -23,6 +21,8 @@ namespace Toxy.Parsers
             ToxyDocument rdoc = new ToxyDocument();
             ITextExtractionStrategy its = new LocationTextExtractionStrategy();
 
+            // First we register all system fonts to the parser
+            PdfFontFactory.RegisterSystemDirectories();
             using (PdfDocument reader = new PdfDocument(new PdfReader(this.Context.Path)))
             {
                 for (int i = 1; i <= reader.GetNumberOfPages(); i++)

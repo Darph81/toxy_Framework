@@ -1,8 +1,7 @@
-﻿using iText.Kernel.Pdf;
+﻿using iText.Kernel.Font;
+using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -19,6 +18,8 @@ namespace Toxy.Parsers
             if (!File.Exists(Context.Path))
                 throw new FileNotFoundException("File " + Context.Path + " is not found");
 
+            // First we register all system fonts to the parser
+            PdfFontFactory.RegisterSystemDirectories();
             using (PdfDocument reader = new PdfDocument(new PdfReader(this.Context.Path)))
             {
                 StringBuilder text = new StringBuilder();
