@@ -82,8 +82,8 @@ namespace Toxy
             parserMapping.Add(".rtf", typeRtf);
 
             var typePdf = new List<Type>();
-            typePdf.Add(typeof(PDFTextParser));
-			typePdf.Add(typeof(PDFDocumentParser));
+            typePdf.Add(typeof(PDFPigTextParser));
+			typePdf.Add(typeof(PDFPigDocumentParser));
             parserMapping.Add(".pdf", typePdf);
 
             var typeHtml = new List<Type>();
