@@ -216,5 +216,23 @@ namespace Toxy
             ISlideshowParser parser = (ISlideshowParser)obj;
             return parser;            
         }
+
+        /// <summary>
+        /// Return true if the FileType is supported by any parser
+        /// </summary>
+        /// <param name="filename">name to check the extension</param>
+        /// <returns>true when supported otherwise false</returns>
+        public static bool IsSupportedFileType(string filename)
+        {
+            try
+            {
+                string extension = GetFileExtention(filename);
+                return !string.IsNullOrWhiteSpace(extension);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
     }
 }
