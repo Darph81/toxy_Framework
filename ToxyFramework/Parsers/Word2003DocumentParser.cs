@@ -1,8 +1,4 @@
-﻿using NPOI.HWPF;
-using NPOI.HWPF.UserModel;
 using NPOI.XWPF.UserModel;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -36,33 +32,37 @@ namespace Toxy.Parsers
 
             using (FileStream stream = File.OpenRead(Context.Path))
             {
-                HWPFDocument worddoc = new HWPFDocument(stream);
-                if (extractHeader && worddoc.GetHeaderStoryRange() != null)
+                XWPFDocument wordDoc = new XWPFDocument(stream);
+
+                if (extractHeader && wordDoc.HeaderList.Count > 0)
                 {
                     StringBuilder sb = new StringBuilder();
-                    rdoc.Header = worddoc.GetHeaderStoryRange().Text;
+                    foreach (var header in wordDoc.HeaderList)
+                    {
+                        sb.AppendLine(header.Text);
+                    }
+                    rdoc.Header = sb.ToString();
                 }
-                if (extractFooter && worddoc.GetFootnoteRange() != null)
+
+                if (extractFooter && wordDoc.FooterList.Count > 0)
                 {
                     StringBuilder sb = new StringBuilder();
-                    rdoc.Footer = worddoc.GetFootnoteRange().Text;
+                    foreach (var footer in wordDoc.FooterList)
+                    {
+                        sb.AppendLine(footer.Text);
+                    }
+                    rdoc.Footer = sb.ToString();
                 }
-                for (int i=0;i<worddoc.GetRange().NumParagraphs;i++)
+
+                foreach (XWPFParagraph para in wordDoc.Paragraphs)
                 {
-                    Paragraph para = worddoc.GetRange().GetParagraph(i);
                     string text = para.Text;
                     ToxyParagraph p = new ToxyParagraph();
                     p.Text = text;
-                    //var runs = para.Runs;
-                    p.StyleID = para.GetStyleIndex().ToString();
+                    p.StyleID = para.Style;
 
-                    //for (int i = 0; i < runs.Count; i++)
-                    //{
-                    //    var run = runs[i];
-
-                    //}
                     rdoc.Paragraphs.Add(p);
-                }               
+                }
             }
             return rdoc;
         }
