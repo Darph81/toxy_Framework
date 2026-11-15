@@ -1,5 +1,7 @@
-﻿using DocumentFormat.OpenXml.Packaging;
+﻿using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -18,16 +20,8 @@ namespace Toxy.Parsers
 		{
 			Utility.ValidateContext(Context);
 			Utility.ThrowIfProtected(Context);
-			bool extractHeader = false;
-			if (Context.Properties.ContainsKey("ExtractHeader"))
-			{
-				extractHeader = Utility.IsTrue(Context.Properties["ExtractHeader"]);
-			}
-			bool extractFooter = false;
-			if (Context.Properties.ContainsKey("ExtractFooter"))
-			{
-				extractFooter = Utility.IsTrue(Context.Properties["ExtractFooter"]);
-			}
+			bool extractHeader = WordprocessingText.IsOptionEnabled(Context, "ExtractHeader");
+			bool extractFooter = WordprocessingText.IsOptionEnabled(Context, "ExtractFooter");
 
 			ToxyDocument rdoc = new ToxyDocument();
 			Stream stream = Utility.GetStream(Context);
@@ -43,37 +37,32 @@ namespace Toxy.Parsers
 
 					if (extractHeader)
 					{
-						StringBuilder sb = new StringBuilder();
-						foreach (HeaderPart headerPart in mainPart.HeaderParts)
-						{
-							sb.AppendLine(WordprocessingText.GetText(headerPart.Header));
-						}
-						rdoc.Header = sb.ToString();
+						rdoc.Header = JoinLines(WordprocessingText.GetHeaderTexts(mainPart));
 					}
 					if (extractFooter)
 					{
-						StringBuilder sb = new StringBuilder();
-						foreach (FooterPart footerPart in mainPart.FooterParts)
-						{
-							sb.AppendLine(WordprocessingText.GetText(footerPart.Footer));
-						}
-						rdoc.Footer = sb.ToString();
+						rdoc.Footer = JoinLines(WordprocessingText.GetFooterTexts(mainPart));
 					}
 
 					Body body = mainPart.Document?.Body;
 					if (body != null)
 					{
 						// body paragraphs first, followed by the paragraphs of the tables
-						foreach (Paragraph para in WordprocessingText.GetParagraphs(body))
+						List<Paragraph> tableParagraphs = new List<Paragraph>();
+						foreach (OpenXmlElement block in WordprocessingText.GetBlocks(body))
 						{
-							rdoc.Paragraphs.Add(ToToxyParagraph(para));
-						}
-						foreach (Table table in WordprocessingText.GetTables(body))
-						{
-							foreach (Paragraph para in WordprocessingText.GetCellParagraphs(table))
+							if (block is Paragraph para)
 							{
 								rdoc.Paragraphs.Add(ToToxyParagraph(para));
 							}
+							else if (block is Table table)
+							{
+								tableParagraphs.AddRange(WordprocessingText.GetCellParagraphs(table));
+							}
+						}
+						foreach (Paragraph cellPara in tableParagraphs)
+						{
+							rdoc.Paragraphs.Add(ToToxyParagraph(cellPara));
 						}
 					}
 				}
@@ -86,6 +75,16 @@ namespace Toxy.Parsers
 				}
 			}
 			return rdoc;
+		}
+
+		private static string JoinLines(IEnumerable<string> lines)
+		{
+			StringBuilder sb = new StringBuilder();
+			foreach (string line in lines)
+			{
+				sb.AppendLine(line);
+			}
+			return sb.ToString();
 		}
 
 		private static ToxyParagraph ToToxyParagraph(Paragraph paragraph)

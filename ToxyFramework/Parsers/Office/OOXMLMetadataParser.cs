@@ -3,11 +3,15 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Packaging;
+using System.Linq;
+using System.Xml.Linq;
 
 namespace Toxy.Parsers
 {
 	public class OOXMLMetadataParser : IMetadataParser
 	{
+		private const string ExtendedPropertiesRelationship = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
+
 		public OOXMLMetadataParser(ParserContext context)
 		{
 			Context = context;
@@ -33,7 +37,7 @@ namespace Toxy.Parsers
 				}
 
 				AddCoreProperty(metadata, pack.PackageProperties);
-				AddExtendedProperties(metadata, OoxmlExtendedProperties.Read(pack));
+				AddExtendedProperties(metadata, ReadExtendedProperties(pack));
 			}
 			finally
 			{
@@ -47,27 +51,20 @@ namespace Toxy.Parsers
 		/// </summary>
 		private static void AddCoreProperty(ToxyMetadata metadata, PackageProperties props)
 		{
-			var candidates = new List<KeyValuePair<string, object>>
+			bool Add(string name, object value)
 			{
-				new KeyValuePair<string, object>("Title", props.Title),
-				new KeyValuePair<string, object>("Identifier", props.Identifier),
-				new KeyValuePair<string, object>("Keywords", props.Keywords),
-				new KeyValuePair<string, object>("Revision", props.Revision),
-				new KeyValuePair<string, object>("Subject", props.Subject),
-				new KeyValuePair<string, object>("Modified", props.Modified),
-				new KeyValuePair<string, object>("LastPrinted", props.LastPrinted),
-				new KeyValuePair<string, object>("Created", props.Created),
-				new KeyValuePair<string, object>("Creator", props.Creator),
-				new KeyValuePair<string, object>("Description", props.Description),
-			};
-			foreach (KeyValuePair<string, object> candidate in candidates)
-			{
-				if (candidate.Value != null)
+				if (value == null)
 				{
-					metadata.Add(candidate.Key, candidate.Value);
-					return;
+					return false;
 				}
+				metadata.Add(name, value);
+				return true;
 			}
+
+			_ = Add("Title", props.Title) || Add("Identifier", props.Identifier) || Add("Keywords", props.Keywords)
+				|| Add("Revision", props.Revision) || Add("Subject", props.Subject) || Add("Modified", props.Modified)
+				|| Add("LastPrinted", props.LastPrinted) || Add("Created", props.Created) || Add("Creator", props.Creator)
+				|| Add("Description", props.Description);
 		}
 
 		private static void AddExtendedProperties(ToxyMetadata metadata, IReadOnlyDictionary<string, string> props)
@@ -90,6 +87,34 @@ namespace Toxy.Parsers
 					metadata.Add(name, number);
 				}
 			}
+		}
+
+		/// <summary>
+		/// Reads the text of the extended (application) properties, i.e. the part /docProps/app.xml, by their local name.
+		/// </summary>
+		private static IReadOnlyDictionary<string, string> ReadExtendedProperties(Package package)
+		{
+			var properties = new Dictionary<string, string>();
+			PackageRelationship relationship = package.GetRelationshipsByType(ExtendedPropertiesRelationship).FirstOrDefault();
+			if (relationship == null)
+			{
+				return properties;
+			}
+
+			Uri partUri = PackUriHelper.ResolvePartUri(new Uri("/", UriKind.Relative), relationship.TargetUri);
+			if (!package.PartExists(partUri))
+			{
+				return properties;
+			}
+
+			using (var stream = package.GetPart(partUri).GetStream())
+			{
+				foreach (XElement element in XDocument.Load(stream).Root.Elements())
+				{
+					properties[element.Name.LocalName] = element.Value;
+				}
+			}
+			return properties;
 		}
 	}
 }

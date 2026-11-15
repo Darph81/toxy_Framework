@@ -19,16 +19,8 @@ namespace Toxy.Parsers
 
 		internal override string ParseText(Stream stream)
 		{
-			bool extractHeader = false;
-			if (Context.Properties.ContainsKey("ExtractHeader"))
-			{
-				extractHeader = Utility.IsTrue(Context.Properties["ExtractHeader"]);
-			}
-			bool extractFooter = false;
-			if (Context.Properties.ContainsKey("ExtractFooter"))
-			{
-				extractFooter = Utility.IsTrue(Context.Properties["ExtractFooter"]);
-			}
+			bool extractHeader = WordprocessingText.IsOptionEnabled(Context, "ExtractHeader");
+			bool extractFooter = WordprocessingText.IsOptionEnabled(Context, "ExtractFooter");
 
 			StringBuilder sb = new StringBuilder();
 			using (WordprocessingDocument worddoc = WordprocessingDocument.Open(stream, false))
@@ -36,10 +28,9 @@ namespace Toxy.Parsers
 				MainDocumentPart mainPart = worddoc.MainDocumentPart;
 				if (extractHeader && mainPart != null)
 				{
-					foreach (HeaderPart headerPart in mainPart.HeaderParts)
+					foreach (string header in WordprocessingText.GetHeaderTexts(mainPart))
 					{
-						sb.Append("[Header] ");
-						sb.AppendLine(WordprocessingText.GetText(headerPart.Header));
+						sb.Append("[Header] ").AppendLine(header);
 					}
 				}
 
@@ -61,10 +52,9 @@ namespace Toxy.Parsers
 
 				if (extractFooter && mainPart != null)
 				{
-					foreach (FooterPart footerPart in mainPart.FooterParts)
+					foreach (string footer in WordprocessingText.GetFooterTexts(mainPart))
 					{
-						sb.Append("[Footer] ");
-						sb.AppendLine(WordprocessingText.GetText(footerPart.Footer));
+						sb.Append("[Footer] ").AppendLine(footer);
 					}
 				}
 			}

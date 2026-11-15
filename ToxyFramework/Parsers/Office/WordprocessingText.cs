@@ -1,4 +1,5 @@
 ﻿using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,22 +46,38 @@ namespace Toxy.Parsers
 			}
 		}
 
-		public static IEnumerable<Paragraph> GetParagraphs(OpenXmlElement container)
+		private static IEnumerable<Paragraph> GetParagraphs(OpenXmlElement container)
 		{
 			return GetBlocks(container).OfType<Paragraph>();
-		}
-
-		public static IEnumerable<Table> GetTables(OpenXmlElement container)
-		{
-			return GetBlocks(container).OfType<Table>();
 		}
 
 		/// <summary>The paragraphs directly contained in the cells of <paramref name="table"/>.</summary>
 		public static IEnumerable<Paragraph> GetCellParagraphs(Table table)
 		{
-			return table.Elements<TableRow>()
-				.SelectMany(row => row.Elements<TableCell>())
-				.SelectMany(cell => GetParagraphs(cell));
+			return GetRows(table).SelectMany(row => row.Elements<TableCell>()).SelectMany(GetParagraphs);
+		}
+
+		private static IEnumerable<TableRow> GetRows(Table table)
+		{
+			return table.Elements<TableRow>();
+		}
+
+		/// <summary>True if the option is set to a true value (1, on, true) in the properties of the context.</summary>
+		public static bool IsOptionEnabled(ParserContext context, string name)
+		{
+			return context.Properties.ContainsKey(name) && Utility.IsTrue(context.Properties[name]);
+		}
+
+		/// <summary>The text of every header of the document.</summary>
+		public static IEnumerable<string> GetHeaderTexts(MainDocumentPart mainPart)
+		{
+			return mainPart.HeaderParts.Select(part => GetBlocksText(part.Header));
+		}
+
+		/// <summary>The text of every footer of the document.</summary>
+		public static IEnumerable<string> GetFooterTexts(MainDocumentPart mainPart)
+		{
+			return mainPart.FooterParts.Select(part => GetBlocksText(part.Footer));
 		}
 
 		public static string GetStyleId(Paragraph paragraph)
@@ -85,7 +102,7 @@ namespace Toxy.Parsers
 					{
 						case Text text: builder.Append(text.Text); break;
 						case TabChar _: builder.Append('\t'); break;
-						case Break _: builder.Append('\n'); break;
+						case Break _:
 						case CarriageReturn _: builder.Append('\n'); break;
 						case NoBreakHyphen _: builder.Append('-'); break;
 					}
@@ -97,22 +114,22 @@ namespace Toxy.Parsers
 		/// <summary>The text of a table: one line per row, cells separated by tabs.</summary>
 		public static string GetText(Table table)
 		{
-			StringBuilder builder = new StringBuilder();
-			foreach (TableRow row in table.Elements<TableRow>())
-			{
-				IEnumerable<string> cells = row.Elements<TableCell>()
-					.Select(cell => string.Join("\n", GetParagraphs(cell).Select(GetText)));
-				builder.Append(string.Join("\t", cells)).Append('\n');
-			}
-			return builder.ToString();
+			return string.Join("\n", GetRows(table).Select(row => string.Join("\t",
+				row.Elements<TableCell>().Select(cell => string.Join("\n", GetParagraphs(cell).Select(GetText))))));
 		}
 
-		/// <summary>The text of a header, footer or other container of block elements, one line per paragraph.</summary>
-		public static string GetText(OpenXmlElement container)
+		/// <summary>The text of a header, footer or other container of block elements, one line per block.</summary>
+		public static string GetBlocksText(OpenXmlElement container)
 		{
-			IEnumerable<string> blocks = GetBlocks(container).Select(block =>
-				block is Paragraph paragraph ? GetText(paragraph) : GetText((Table)block));
-			return string.Join("\n", blocks);
+			return string.Join("\n", GetBlocks(container).Select(block =>
+			{
+				switch (block)
+				{
+					case Paragraph paragraph: return GetText(paragraph);
+					case Table table: return GetText(table);
+					default: return string.Empty;
+				}
+			}));
 		}
 	}
 }
