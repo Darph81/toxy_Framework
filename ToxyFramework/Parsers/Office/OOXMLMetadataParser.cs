@@ -95,7 +95,9 @@ namespace Toxy.Parsers
 		private static IReadOnlyDictionary<string, string> ReadExtendedProperties(Package package)
 		{
 			var properties = new Dictionary<string, string>();
-			PackageRelationship relationship = package.GetRelationshipsByType(ExtendedPropertiesRelationship).FirstOrDefault();
+			PackageRelationship relationship = package.GetRelationshipsByType(ExtendedPropertiesRelationship)
+				.Concat(package.GetRelationshipsByType("http://purl.oclc.org/ooxml/officeDocument/relationships/extended-properties"))
+				.FirstOrDefault();
 			if (relationship == null)
 			{
 				return properties;

@@ -54,12 +54,53 @@ namespace Toxy.Parsers
 		/// <summary>The paragraphs directly contained in the cells of <paramref name="table"/>.</summary>
 		public static IEnumerable<Paragraph> GetCellParagraphs(Table table)
 		{
-			return GetRows(table).SelectMany(row => row.Elements<TableCell>()).SelectMany(GetParagraphs);
+			return GetRows(table).SelectMany(GetCells).SelectMany(GetParagraphs);
 		}
 
 		private static IEnumerable<TableRow> GetRows(Table table)
 		{
-			return table.Elements<TableRow>();
+			return GetWrapped<TableRow>(table);
+		}
+
+		private static IEnumerable<TableCell> GetCells(TableRow row)
+		{
+			return GetWrapped<TableCell>(row);
+		}
+
+		/// <summary>
+		/// Enumerates the children of type <typeparamref name="T"/> of <paramref name="container"/>,
+		/// including the ones wrapped in content controls or custom XML.
+		/// </summary>
+		private static IEnumerable<T> GetWrapped<T>(OpenXmlElement container) where T : OpenXmlElement
+		{
+			foreach (OpenXmlElement child in container.ChildElements)
+			{
+				switch (child)
+				{
+					case T item:
+						yield return item;
+						break;
+					case SdtRow sdtRow:
+						foreach (T item in GetWrapped<T>(sdtRow.SdtContentRow ?? (OpenXmlElement)sdtRow))
+						{
+							yield return item;
+						}
+						break;
+					case SdtCell sdtCell:
+						foreach (T item in GetWrapped<T>(sdtCell.SdtContentCell ?? (OpenXmlElement)sdtCell))
+						{
+							yield return item;
+						}
+						break;
+					case CustomXmlRow _:
+					case CustomXmlCell _:
+						foreach (T item in GetWrapped<T>(child))
+						{
+							yield return item;
+						}
+						break;
+				}
+			}
 		}
 
 		/// <summary>True if the option is set to a true value (1, on, true) in the properties of the context.</summary>
@@ -115,7 +156,7 @@ namespace Toxy.Parsers
 		public static string GetText(Table table)
 		{
 			return string.Join("\n", GetRows(table).Select(row => string.Join("\t",
-				row.Elements<TableCell>().Select(cell => string.Join("\n", GetParagraphs(cell).Select(GetText))))));
+				GetCells(row).Select(cell => string.Join("\n", GetParagraphs(cell).Select(GetText))))));
 		}
 
 		/// <summary>The text of a header, footer or other container of block elements, one line per block.</summary>
