@@ -32,6 +32,17 @@ namespace Toxy.Test
         }
 
         [Test]
+        public void TestDocxWithStrictExtendedProperties()
+        {
+            string path = Path.GetFullPath(TestDataSample.GetOOXMLPath("StrictExtendedProperties.docx"));
+            IMetadataParser parser = (IMetadataParser)ParserFactory.CreateMetadata(new ParserContext(path));
+            ToxyMetadata x = parser.Parse();
+            ClassicAssert.AreEqual("Strict sample", x.Get("Title").Value);
+            ClassicAssert.AreEqual("Strict Writer", x.Get("Application").Value);
+            ClassicAssert.AreEqual(5L, x.Get("Words").Value);
+        }
+
+        [Test]
         public void TestXlsx()
         {
             string path = Path.GetFullPath(TestDataSample.GetOOXMLPath("sample.xlsx"));

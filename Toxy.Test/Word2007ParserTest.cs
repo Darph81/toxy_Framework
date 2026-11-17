@@ -57,6 +57,20 @@ namespace Toxy.Test
             ClassicAssert.AreEqual("Cell 2,3", doc.Paragraphs[7].Text);
         }
         [Test]
+        public void TestParseTableWithContentControls()
+        {
+            ParserContext context = new ParserContext(TestDataSample.GetWordPath("wrapped-table.docx"));
+            ToxyDocument doc = ParserFactory.CreateDocument(context).Parse();
+            string[] expected = { "Before the table", "After the table", "Plain 1,1", "Sdt cell 1,2", "Custom cell 1,3",
+                "Sdt row 2,1", "Sdt row 2,2", "Custom row 3,1" };
+            ClassicAssert.AreEqual(expected, doc.Paragraphs.ConvertAll(p => p.Text).ToArray());
+
+            string text = ParserFactory.CreateText(context).Parse();
+            StringAssert.Contains("Plain 1,1\tSdt cell 1,2\tCustom cell 1,3", text);
+            StringAssert.Contains("Sdt row 2,1\tSdt row 2,2", text);
+            StringAssert.Contains("Custom row 3,1", text);
+        }
+        [Test]
         public void TestStreamForWordTextParser()
         {
             ParserContext context = new ParserContext(TestDataSample.GetFileStream("SampleDoc.docx", "Word"));
